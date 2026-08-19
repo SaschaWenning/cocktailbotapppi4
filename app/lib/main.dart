@@ -7498,7 +7498,6 @@ class _RecipeOverviewState extends State<RecipeOverview> {
   @override
   Widget build(BuildContext context) {
     final store = widget.store;
-    final responsive = CocktailBotResponsive.of(context);
     final data = store.sortedRecipesForCategory(widget.category);
 
     final perPage = store.cocktailsPerPage <= 0
@@ -7520,9 +7519,9 @@ class _RecipeOverviewState extends State<RecipeOverview> {
         slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
-              responsive.horizontalPadding,
-              responsive.topPadding,
-              responsive.horizontalPadding,
+              CocktailBotResponsive.of(context).horizontalPadding,
+              CocktailBotResponsive.of(context).topPadding,
+              CocktailBotResponsive.of(context).horizontalPadding,
               12,
             ),
             sliver: SliverToBoxAdapter(
@@ -7536,9 +7535,9 @@ class _RecipeOverviewState extends State<RecipeOverview> {
           if (data.isNotEmpty)
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                responsive.horizontalPadding,
+                CocktailBotResponsive.of(context).horizontalPadding,
                 0,
-                responsive.horizontalPadding,
+                CocktailBotResponsive.of(context).horizontalPadding,
                 12,
               ),
               sliver: SliverToBoxAdapter(
@@ -7566,27 +7565,36 @@ class _RecipeOverviewState extends State<RecipeOverview> {
           else
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                responsive.horizontalPadding,
+                CocktailBotResponsive.of(context).horizontalPadding,
                 4,
-                responsive.horizontalPadding,
+                CocktailBotResponsive.of(context).horizontalPadding,
                 22,
               ),
-              sliver: SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                  (_, i) => RecipeCard(
-                    store: store,
-                    recipe: visible[i],
-                    index: start + i,
-                    onOpenRecipe: widget.onOpenRecipe,
-                  ),
-                  childCount: visible.length,
-                ),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: responsive.recipeColumns,
-                  childAspectRatio: responsive.recipeAspectRatio,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.crossAxisExtent;
+                  final responsive = CocktailBotResponsive.of(context);
+                  final count = responsive.recipeColumns;
+
+                  return SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) => RecipeCard(
+                        store: store,
+                        recipe: visible[i],
+                        index: start + i,
+                        onOpenRecipe: widget.onOpenRecipe,
+                      ),
+                      childCount: visible.length,
+                    ),
+                    gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: count,
+                      childAspectRatio: responsive.recipeAspectRatio,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                  );
+                },
               ),
             ),
         ],
@@ -7684,150 +7692,41 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = recipe.imagePath ?? drinkAssets[index % drinkAssets.length];
-    final status = store.availabilityFor(recipe);
-    final ingredientName = store.availabilityIngredientName(recipe);
-    final unavailable = status == RecipeAvailability.unavailable;
-    final uncalibrated = status == RecipeAvailability.uncalibrated;
-    final low = status == RecipeAvailability.low;
-    final alcoholPercent = store.recipeAlcoholPercent(recipe);
-    final borderRadius = BorderRadius.circular(10);
-
+    // Pi-4 Diagnose V3:
+    // Absichtlich extrem einfache Karte, um den Flutter/SkWasm-Scrollpfad
+    // getrennt von Bildern, Gradienten, Clipping und Status-Overlays zu messen.
     return Semantics(
       button: true,
       label: store.displayRecipeName(recipe),
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        clipBehavior: Clip.hardEdge,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => onOpenRecipe(
-            recipe,
-            drinkAssets[index % drinkAssets.length],
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: store.appColors.cardColor,
-              border: Border.all(
-                color: store.appColors.borderColor,
-                width:
-                    store.appColors.visualStyle == AppVisualStyle.neon ? 1.4 : 1,
-              ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onOpenRecipe(
+          recipe,
+          drinkAssets[index % drinkAssets.length],
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: store.appColors.cardColor,
+            border: Border.all(
+              color: store.appColors.borderColor,
+              width: 1,
             ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: cocktailImage(
-                    image,
-                    fallbackAsset: drinkAssets[index % drinkAssets.length],
-                  ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(
+                store.displayRecipeName(recipe),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: store.appColors.textPrimaryColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
                 ),
-                const Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Color(0x18000000),
-                          Color(0xE8000000),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                if (unavailable || uncalibrated || low)
-                  Positioned(
-                    left: 8,
-                    top: 8,
-                    right: 42,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: unavailable
-                              ? store.appColors.errorColor
-                              : store.appColors.warningColor,
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              unavailable
-                                  ? Icons.block
-                                  : Icons.warning_amber_rounded,
-                              color: Colors.white,
-                              size: 15,
-                            ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                unavailable
-                                    ? '${tr('Nicht verfügbar')}${ingredientName == null ? '' : ': $ingredientName'}'
-                                    : uncalibrated
-                                        ? '${tr('Kalibrierung fehlt')}${ingredientName == null ? '' : ': $ingredientName'}'
-                                        : '${tr('Niedriger Füllstand')}${ingredientName == null ? '' : ': $ingredientName'}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                if (alcoholPercent > 0)
-                  Positioned(
-                    left: 10,
-                    bottom: 48,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: .45),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: .25),
-                        ),
-                      ),
-                      child: Text(
-                        '${formatAlcoholPercent(alcoholPercent)} % vol',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  left: 10,
-                  right: 10,
-                  bottom: 10,
-                  child: Text(
-                    store.displayRecipeName(recipe),
-                    maxLines: 2,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
