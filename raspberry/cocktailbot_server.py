@@ -1739,6 +1739,15 @@ def save_app_state(state: dict[str, Any]) -> None:
 
 def create_app(controller: PumpController, web_root: Path) -> Flask:
     app = Flask(__name__, static_folder=None)
+
+    # Flutter Web Wasm/Skwasm can render on multiple threads only when the
+    # document is cross-origin isolated. Keep these headers on every local
+    # response so index.html, static assets and API requests share one policy.
+    @app.after_request
+    def add_flutter_wasm_isolation_headers(response):  # type: ignore[no-untyped-def]
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
+        return response
     payment = PaypalPaymentBackend()
     licensing = LicenseManager()
     network_access = NetworkAccessManager()

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-REPO_URL="${COCKTAILBOT_REPO_URL:-https://github.com/saschawenning/cocktailbotapp.git}"
+REPO_URL="${COCKTAILBOT_REPO_URL:-https://github.com/saschawenning/cocktailbotapppi4.git}"
 REPO_BRANCH="${COCKTAILBOT_REPO_BRANCH:-main}"
 INSTALL_ROOT="${COCKTAILBOT_INSTALL_ROOT:-/opt/cocktailbot}"
 SOURCE_DIR="$INSTALL_ROOT/source"

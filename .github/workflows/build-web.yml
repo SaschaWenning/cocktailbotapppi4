@@ -26,7 +26,7 @@ jobs:
           flutter config --enable-web
           flutter pub get
           flutter create . --platforms web
-          flutter build web --release
+          flutter build web --release --wasm
       - name: Publish web-release branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

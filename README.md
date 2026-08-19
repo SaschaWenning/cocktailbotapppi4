@@ -3,7 +3,7 @@
 Repository:
 
 ```text
-https://github.com/saschawenning/cocktailbotapp.git
+https://github.com/saschawenning/cocktailbotapppi4.git
 ```
 
 ## Architektur
@@ -19,7 +19,7 @@ Die Web-App und das lokale Backend laufen über `http://127.0.0.1:8080`. Der Ser
 ### 1. Repository klonen
 
 ```bash
-git clone https://github.com/saschawenning/cocktailbotapp.git
+git clone https://github.com/saschawenning/cocktailbotapppi4.git
 cd cocktailbotapp
 ```
 
