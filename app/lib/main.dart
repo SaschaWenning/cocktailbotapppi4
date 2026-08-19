@@ -7514,15 +7514,14 @@ class _RecipeOverviewState extends State<RecipeOverview> {
     final end = (start + perPage).clamp(0, data.length).toInt();
     final visible = data.sublist(start, end);
 
-    // Pi-4 Diagnose V4:
-    // Deckt den globalen transparenten Theme-Hintergrund vollständig ab.
-    // So messen wir, ob Alpha-Compositing/Background-Blending beim Scrollen
-    // den verbleibenden SkWasm-Overhead verursacht.
+    // Pi-4 Performance V5:
+    // Normal cocktail cards + opaque overview background.
+    // Keeps the V4 compositing benefit while restoring the real UI.
     return ColoredBox(
       color: store.appColors.backgroundColor,
       child: SafeArea(
         child: CustomScrollView(
-        slivers: [
+          slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
               CocktailBotResponsive.of(context).horizontalPadding,
@@ -7603,7 +7602,7 @@ class _RecipeOverviewState extends State<RecipeOverview> {
                 },
               ),
             ),
-        ],
+          ],
         ),
       ),
     );
@@ -7699,41 +7698,150 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pi-4 Diagnose V3:
-    // Absichtlich extrem einfache Karte, um den Flutter/SkWasm-Scrollpfad
-    // getrennt von Bildern, Gradienten, Clipping und Status-Overlays zu messen.
+    final image = recipe.imagePath ?? drinkAssets[index % drinkAssets.length];
+    final status = store.availabilityFor(recipe);
+    final ingredientName = store.availabilityIngredientName(recipe);
+    final unavailable = status == RecipeAvailability.unavailable;
+    final uncalibrated = status == RecipeAvailability.uncalibrated;
+    final low = status == RecipeAvailability.low;
+    final alcoholPercent = store.recipeAlcoholPercent(recipe);
+    final borderRadius = BorderRadius.circular(10);
+
     return Semantics(
       button: true,
       label: store.displayRecipeName(recipe),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => onOpenRecipe(
-          recipe,
-          drinkAssets[index % drinkAssets.length],
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: store.appColors.cardColor,
-            border: Border.all(
-              color: store.appColors.borderColor,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(10),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        clipBehavior: Clip.hardEdge,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onOpenRecipe(
+            recipe,
+            drinkAssets[index % drinkAssets.length],
           ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                store.displayRecipeName(recipe),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: store.appColors.textPrimaryColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: store.appColors.cardColor,
+              border: Border.all(
+                color: store.appColors.borderColor,
+                width:
+                    store.appColors.visualStyle == AppVisualStyle.neon ? 1.4 : 1,
               ),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: cocktailImage(
+                    image,
+                    fallbackAsset: drinkAssets[index % drinkAssets.length],
+                  ),
+                ),
+                const Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Color(0x18000000),
+                          Color(0xE8000000),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (unavailable || uncalibrated || low)
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    right: 42,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: unavailable
+                              ? store.appColors.errorColor
+                              : store.appColors.warningColor,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              unavailable
+                                  ? Icons.block
+                                  : Icons.warning_amber_rounded,
+                              color: Colors.white,
+                              size: 15,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                unavailable
+                                    ? '${tr('Nicht verfügbar')}${ingredientName == null ? '' : ': $ingredientName'}'
+                                    : uncalibrated
+                                        ? '${tr('Kalibrierung fehlt')}${ingredientName == null ? '' : ': $ingredientName'}'
+                                        : '${tr('Niedriger Füllstand')}${ingredientName == null ? '' : ': $ingredientName'}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                if (alcoholPercent > 0)
+                  Positioned(
+                    left: 10,
+                    bottom: 48,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: .45),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .25),
+                        ),
+                      ),
+                      child: Text(
+                        '${formatAlcoholPercent(alcoholPercent)} % vol',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
+                  child: Text(
+                    store.displayRecipeName(recipe),
+                    maxLines: 2,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
