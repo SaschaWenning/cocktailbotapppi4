@@ -295,7 +295,9 @@ class _CocktailMachineAppState extends State<CocktailMachineApp> {
           return Stack(
             children: [
               Positioned.fill(
-                child: CocktailBotThemeBackground(colors: store.appColors),
+                child: RepaintBoundary(
+                  child: CocktailBotThemeBackground(colors: store.appColors),
+                ),
               ),
               Positioned.fill(
                 child: child ?? const SizedBox.shrink(),
@@ -7697,140 +7699,145 @@ class RecipeCard extends StatelessWidget {
     final uncalibrated = status == RecipeAvailability.uncalibrated;
     final low = status == RecipeAvailability.low;
     final alcoholPercent = store.recipeAlcoholPercent(recipe);
+    final borderRadius = BorderRadius.circular(10);
 
-    return Material(
-      color: store.appColors.cardColor,
-      borderRadius: BorderRadius.circular(10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: store.appColors.borderColor,
-          width: store.appColors.visualStyle == AppVisualStyle.neon ? 1.4 : 1,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => onOpenRecipe(
-          recipe,
-          drinkAssets[index % drinkAssets.length],
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: cocktailImage(
-                image,
-                fallbackAsset: drinkAssets[index % drinkAssets.length],
+    return Semantics(
+      button: true,
+      label: store.displayRecipeName(recipe),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        clipBehavior: Clip.hardEdge,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onOpenRecipe(
+            recipe,
+            drinkAssets[index % drinkAssets.length],
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: store.appColors.cardColor,
+              border: Border.all(
+                color: store.appColors.borderColor,
+                width:
+                    store.appColors.visualStyle == AppVisualStyle.neon ? 1.4 : 1,
               ),
             ),
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Color(0x18000000),
-                      Color(0xE8000000),
-                    ],
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: cocktailImage(
+                    image,
+                    fallbackAsset: drinkAssets[index % drinkAssets.length],
                   ),
                 ),
-              ),
-            ),
-            if (unavailable || uncalibrated || low)
-              Positioned(
-                left: 8,
-                top: 8,
-                right: 42,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                const Positioned.fill(
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: unavailable
-                          ? store.appColors.errorColor
-                          : store.appColors.warningColor,
-                      borderRadius: BorderRadius.circular(7),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x66000000),
-                          blurRadius: 7,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Color(0x18000000),
+                          Color(0xE8000000),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          unavailable
-                              ? Icons.block
-                              : Icons.warning_amber_rounded,
-                          color: Colors.white,
-                          size: 15,
+                  ),
+                ),
+                if (unavailable || uncalibrated || low)
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    right: 42,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
                         ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            unavailable
-                                ? '${tr('Nicht verfügbar')}${ingredientName == null ? '' : ': $ingredientName'}'
-                                : uncalibrated
-                                    ? '${tr('Kalibrierung fehlt')}${ingredientName == null ? '' : ': $ingredientName'}'
-                                    : '${tr('Niedriger Füllstand')}${ingredientName == null ? '' : ': $ingredientName'}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                        decoration: BoxDecoration(
+                          color: unavailable
+                              ? store.appColors.errorColor
+                              : store.appColors.warningColor,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              unavailable
+                                  ? Icons.block
+                                  : Icons.warning_amber_rounded,
                               color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
+                              size: 15,
                             ),
-                          ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                unavailable
+                                    ? '${tr('Nicht verfügbar')}${ingredientName == null ? '' : ': $ingredientName'}'
+                                    : uncalibrated
+                                        ? '${tr('Kalibrierung fehlt')}${ingredientName == null ? '' : ': $ingredientName'}'
+                                        : '${tr('Niedriger Füllstand')}${ingredientName == null ? '' : ': $ingredientName'}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            if (alcoholPercent > 0)
-              Positioned(
-                left: 10,
-                bottom: 48,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: .45),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: .25),
+                if (alcoholPercent > 0)
+                  Positioned(
+                    left: 10,
+                    bottom: 48,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: .45),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .25),
+                        ),
+                      ),
+                      child: Text(
+                        '${formatAlcoholPercent(alcoholPercent)} % vol',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
+                Positioned(
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
                   child: Text(
-                    '${formatAlcoholPercent(alcoholPercent)} % vol',
+                    store.displayRecipeName(recipe),
+                    maxLines: 2,
                     style: const TextStyle(
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
                     ),
                   ),
                 ),
-              ),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: Text(
-                store.displayRecipeName(recipe),
-                maxLines: 2,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
