@@ -1,0 +1,17 @@
+.dart_tool/
+.buildlog/
+build/
+.pub-cache/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# NEVER commit CocktailBot license signing secrets
+cocktailbot_license_private_key.pem
+*license_private_key*.pem
+issued_licenses.csv

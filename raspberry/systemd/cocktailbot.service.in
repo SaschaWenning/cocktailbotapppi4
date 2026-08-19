@@ -1,0 +1,25 @@
+[Unit]
+Description=CocktailBot Raspberry GPIO, Pico LED and local PayPal service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__GROUP__
+SupplementaryGroups=gpio dialout
+Environment=PYTHONUNBUFFERED=1
+Environment=GPIOZERO_PIN_FACTORY=lgpio
+WorkingDirectory=/var/lib/cocktailbot
+EnvironmentFile=/etc/cocktailbot/cocktailbot.env
+EnvironmentFile=-/etc/cocktailbot/paypal.env
+ExecStart=/opt/cocktailbot/venv/bin/python /opt/cocktailbot/raspberry/cocktailbot_server.py --host 0.0.0.0 --port 8080 --web-root /opt/cocktailbot/web
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+StateDirectory=cocktailbot
+StateDirectoryMode=0750
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target
