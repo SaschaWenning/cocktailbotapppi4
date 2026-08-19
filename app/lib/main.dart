@@ -7498,6 +7498,7 @@ class _RecipeOverviewState extends State<RecipeOverview> {
   @override
   Widget build(BuildContext context) {
     final store = widget.store;
+    final responsive = CocktailBotResponsive.of(context);
     final data = store.sortedRecipesForCategory(widget.category);
 
     final perPage = store.cocktailsPerPage <= 0
@@ -7519,9 +7520,9 @@ class _RecipeOverviewState extends State<RecipeOverview> {
         slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
-              CocktailBotResponsive.of(context).horizontalPadding,
-              CocktailBotResponsive.of(context).topPadding,
-              CocktailBotResponsive.of(context).horizontalPadding,
+              responsive.horizontalPadding,
+              responsive.topPadding,
+              responsive.horizontalPadding,
               12,
             ),
             sliver: SliverToBoxAdapter(
@@ -7535,9 +7536,9 @@ class _RecipeOverviewState extends State<RecipeOverview> {
           if (data.isNotEmpty)
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                CocktailBotResponsive.of(context).horizontalPadding,
+                responsive.horizontalPadding,
                 0,
-                CocktailBotResponsive.of(context).horizontalPadding,
+                responsive.horizontalPadding,
                 12,
               ),
               sliver: SliverToBoxAdapter(
@@ -7565,36 +7566,27 @@ class _RecipeOverviewState extends State<RecipeOverview> {
           else
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                CocktailBotResponsive.of(context).horizontalPadding,
+                responsive.horizontalPadding,
                 4,
-                CocktailBotResponsive.of(context).horizontalPadding,
+                responsive.horizontalPadding,
                 22,
               ),
-              sliver: SliverLayoutBuilder(
-                builder: (context, constraints) {
-                  final w = constraints.crossAxisExtent;
-                  final responsive = CocktailBotResponsive.of(context);
-                  final count = responsive.recipeColumns;
-
-                  return SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (_, i) => RecipeCard(
-                        store: store,
-                        recipe: visible[i],
-                        index: start + i,
-                        onOpenRecipe: widget.onOpenRecipe,
-                      ),
-                      childCount: visible.length,
-                    ),
-                    gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: count,
-                      childAspectRatio: responsive.recipeAspectRatio,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                  );
-                },
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => RecipeCard(
+                    store: store,
+                    recipe: visible[i],
+                    index: start + i,
+                    onOpenRecipe: widget.onOpenRecipe,
+                  ),
+                  childCount: visible.length,
+                ),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: responsive.recipeColumns,
+                  childAspectRatio: responsive.recipeAspectRatio,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
               ),
             ),
         ],
