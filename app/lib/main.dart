@@ -7514,8 +7514,14 @@ class _RecipeOverviewState extends State<RecipeOverview> {
     final end = (start + perPage).clamp(0, data.length).toInt();
     final visible = data.sublist(start, end);
 
-    return SafeArea(
-      child: CustomScrollView(
+    // Pi-4 Diagnose V4:
+    // Deckt den globalen transparenten Theme-Hintergrund vollständig ab.
+    // So messen wir, ob Alpha-Compositing/Background-Blending beim Scrollen
+    // den verbleibenden SkWasm-Overhead verursacht.
+    return ColoredBox(
+      color: store.appColors.backgroundColor,
+      child: SafeArea(
+        child: CustomScrollView(
         slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
@@ -7598,6 +7604,7 @@ class _RecipeOverviewState extends State<RecipeOverview> {
               ),
             ),
         ],
+        ),
       ),
     );
   }
